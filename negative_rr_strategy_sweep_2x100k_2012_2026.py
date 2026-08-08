@@ -10,7 +10,6 @@ TRAIL=0.06*SIZE; PROF_DAY_MIN=0.005*SIZE; WAIT_DAYS=14; CONS_MAX=0.20
 FULL_START=pd.Timestamp('2012-01-01',tz='UTC'); END=pd.Timestamp('2026-08-09',tz='UTC')
 Y26_START=pd.Timestamp('2026-01-01',tz='UTC')
 WINDOWS={'LON_OPEN':('Europe/London',7),'LON_H1':('Europe/London',8),'NY_H1':('America/New_York',8)}
-
 STRATS=['CANDLE_ONLY','ADX_RISE','DI_ALIGN','ADX_DI','ADX_RANGE','ADX_DI_RANGE','ADX_DI_DIRECTION']
 
 def rma(s,n): return s.ewm(alpha=1/n,adjust=False,min_periods=n).mean()
@@ -48,10 +47,10 @@ for w,(tz,hour) in WINDOWS.items():
     locals_cache[w]=(loc.dt.hour.to_numpy(),loc.dt.weekday.to_numpy(),loc.dt.year.to_numpy())
 
 def direction_and_ok(row,strat):
-    cdir=int(row.cdir)
-    adxrise=np.isfinite(row.adx) and np.isfinite(row.adx_prev) and row.adx>row.adx_prev
-    dialign=(np.isfinite(row.pdi) and np.isfinite(row.mdi) and cdir!=0 and ((cdir>0 and row.pdi>row.mdi) or (cdir<0 and row.mdi>row.pdi)))
-    rangeexp=np.isfinite(row.range_prev) and row['range']>row.range_prev
+    cdir=int(row['cdir'])
+    adxrise=np.isfinite(row['adx']) and np.isfinite(row['adx_prev']) and row['adx']>row['adx_prev']
+    dialign=(np.isfinite(row['pdi']) and np.isfinite(row['mdi']) and cdir!=0 and ((cdir>0 and row['pdi']>row['mdi']) or (cdir<0 and row['mdi']>row['pdi'])))
+    rangeexp=np.isfinite(row['range_prev']) and row['range']>row['range_prev']
     if strat=='CANDLE_ONLY': return cdir, cdir!=0
     if strat=='ADX_RISE': return cdir, cdir!=0 and adxrise
     if strat=='DI_ALIGN': return cdir, cdir!=0 and dialign
@@ -59,8 +58,8 @@ def direction_and_ok(row,strat):
     if strat=='ADX_RANGE': return cdir, cdir!=0 and adxrise and rangeexp
     if strat=='ADX_DI_RANGE': return cdir, cdir!=0 and adxrise and dialign and rangeexp
     if strat=='ADX_DI_DIRECTION':
-        if not (adxrise and np.isfinite(row.pdi) and np.isfinite(row.mdi) and row.pdi!=row.mdi): return 0,False
-        return (1 if row.pdi>row.mdi else -1),True
+        if not (adxrise and np.isfinite(row['pdi']) and np.isfinite(row['mdi']) and row['pdi']!=row['mdi']): return 0,False
+        return (1 if row['pdi']>row['mdi'] else -1),True
     return 0,False
 
 def build_trades(strat,rr):
@@ -70,17 +69,17 @@ def build_trades(strat,rr):
         idxs=np.where((lh==sig_hour)&(wd<=4)&(yr>=2012)&(yr<=2026))[0]
         for i in idxs:
             row=df.iloc[i]
-            if not np.isfinite(row.atr): continue
+            if not np.isfinite(row['atr']): continue
             d,ok=direction_and_ok(row,strat)
             if not ok: continue
             j=i+1
-            if j>=len(df) or (df.loc[j,'dt']-row.dt)>pd.Timedelta(hours=1,minutes=1): continue
-            entry=float(row.high if d>0 else row.low)
+            if j>=len(df) or (df.loc[j,'dt']-row['dt'])>pd.Timedelta(hours=1,minutes=1): continue
+            entry=float(row['high'] if d>0 else row['low'])
             if d>0 and float(df.loc[j,'high'])<entry: continue
             if d<0 and float(df.loc[j,'low'])>entry: continue
-            risk=SL_ATR*float(row.atr)
+            risk=SL_ATR*float(row['atr'])
             if risk<=0: continue
-            stop=entry-d*risk; target=entry+d*tp_atr*float(row.atr)
+            stop=entry-d*risk; target=entry+d*tp_atr*float(row['atr'])
             end=min(j+HOLD-1,len(df)-1); rv=None; exit_idx=end; reason='TIME'
             for k in range(j,end+1):
                 hi=float(df.loc[k,'high']); lo=float(df.loc[k,'low'])
@@ -90,7 +89,9 @@ def build_trades(strat,rr):
                 if hit_tp: rv=rr; exit_idx=k; reason='TP'; break
             if rv is None:
                 rv=((float(df.loc[end,'close'])-entry)*d)/risk
-            out.append(dict(strategy=strat,rr=rr,window=w,signal_dt=row.dt,entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row.dt.date(),year=int(yr[i]),R=float(rv),reason=reason))
+            out.append(dict(strategy=strat,rr=rr,window=w,signal_dt=row['dt'],entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row['dt'].date(),year=int(yr[i]),R=float(rv),reason=reason))
+    if not out:
+        return pd.DataFrame(columns=['strategy','rr','window','signal_dt','entry_bar_dt','exit_dt','trade_day','year','R','reason'])
     return pd.DataFrame(out).sort_values(['signal_dt','entry_bar_dt','window']).reset_index(drop=True)
 
 def metrics(t):
@@ -134,7 +135,6 @@ def simulate(t,start):
             if not s['paid_current']:
                 s['paid_current']=True; s['first_day']=(day-s['account_start']).days; first_days.append(s['first_day'])
             s['bal']=SIZE; s['floor']=SIZE; s['cycle_start']=day; s['daily']=defaultdict(float)
-    # active paid accounts are already known successes; active unpaid are unresolved and excluded
     for s in states:
         if s['paid_current']:
             resolved_total+=1; resolved_success+=1
@@ -158,7 +158,6 @@ for strat in STRATS:
 
 out=pd.DataFrame(rows)
 out.to_csv('negative_rr_strategy_sweep_2x100k_2012_2026.csv',index=False)
-# Practical negative-RR candidates only, positive full and 2026 EV/PF, payout possible.
 neg=out[(out.rr<1)&out.profitable_day_possible].copy()
 neg['score']=neg['fullsim_payout_before_breach_rate'].fillna(0)*100 + neg['fullsim_payouts']*0.5 + neg['full_pf'].clip(upper=3)*10 - neg['fullsim_median_first_payout_days'].fillna(999)/10 + neg['y26sim_payouts']*5
 neg=neg.sort_values(['score','fullsim_payout_before_breach_rate','fullsim_payouts'],ascending=False)
