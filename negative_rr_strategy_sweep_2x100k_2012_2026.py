@@ -141,7 +141,7 @@ def simulate(t,start):
     paydates=sorted(paydates)
     gaps=[(paydates[i]-paydates[i-1]).days for i in range(1,len(paydates))]
     payouts=sum(s['payouts'] for s in states); breaches=sum(s['breaches'] for s in states); accounts=sum(s['accounts'] for s in states); user=sum(s['user'] for s in states)
-    return dict(trades_used=trades_used,payouts=payouts,breaches=breaches,accounts_used=accounts,user_paid=user,net_cash=user-accounts*COST,payout_before_breach_rate=(resolved_success/resolved_total if resolved_total else np.nan),resolved_accounts=resolved_total,successful_accounts=resolved_success,avg_first_payout_days=(np.mean(first_days) if first_days else np.nan),median_first_payout_days=(np.median(first_days) if first_days else np.nan),first_portfolio_payout_date=(paydates[0].date() if paydates else None),first_portfolio_payout_days=((paydates[0]-start.normalize()).days if paydates else np.nan),median_gap_days=(np.median(gaps) if gaps else np.nan))
+    return dict(trades_used=trades_used,payouts=payouts,breaches=breaches,accounts_used=accounts,user_paid=user,net_cash=user-accounts*COST,payout_before_breach_rate=(resolved_success/resolved_total if resolved_total else np.nan),resolved_accounts=resolved_total,successful_accounts=resolved_success,avg_first_payout_days=(np.mean(first_days) if first_days else np.nan),median_first_payout_days=(np.median(first_days) if first_days else np.nan),first_portfolio_payout_date=(paydates[0].date() if paydates else None),first_portfolio_payout_days=((paydates[0].date()-start.date()).days if paydates else np.nan),median_gap_days=(np.median(gaps) if gaps else np.nan))
 
 rows=[]
 for strat in STRATS:
