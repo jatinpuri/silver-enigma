@@ -1,0 +1,26 @@
+name: Turbo 100k split compare 2.7pct
+on:
+  push:
+    paths:
+      - 'turbo_100k_split_compare_27pct_2012_2026.py'
+      - '.github/workflows/turbo_100k_split_compare_27pct.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_100k_split_compare_27pct_2012_2026.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase origin master || true
+          git add turbo_100k_split_compare_27pct_summary.csv turbo_100k_split_compare_27pct_slots.csv
+          git commit -m 'Add 100k split comparison results' || exit 0
+          git push
