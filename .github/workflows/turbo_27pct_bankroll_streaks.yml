@@ -1,0 +1,26 @@
+name: Turbo 2.7pct bankroll streaks
+on:
+  push:
+    paths:
+      - 'turbo_27pct_bankroll_streaks_2012_2026.py'
+      - '.github/workflows/turbo_27pct_bankroll_streaks.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pandas numpy
+      - run: python turbo_27pct_bankroll_streaks_2012_2026.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add turbo_27pct_bankroll_streaks_summary.csv turbo_27pct_bankroll_streaks_cycles.csv turbo_27pct_bankroll_streaks_accounts.csv turbo_27pct_bankroll_streaks_payouts.csv
+          git commit -m 'Add 2.7pct bankroll streak results' || exit 0
+          git push
