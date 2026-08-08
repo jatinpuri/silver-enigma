@@ -1,0 +1,27 @@
+name: EURUSD annual drawdown
+on:
+  push:
+    paths:
+      - 'eurusd_annual_dd.py'
+      - '.github/workflows/eurusd_annual_dd.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy pandas
+      - run: python eurusd_annual_dd.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add eurusd_target_annual_dd.csv eurusd_target_annual_dd_summary.csv
+          git diff --cached --quiet || git commit -m "Add EURUSD annual drawdown results"
+          git pull --rebase origin master
+          git push
