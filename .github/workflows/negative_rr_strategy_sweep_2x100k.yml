@@ -1,0 +1,25 @@
+name: Negative RR strategy sweep 2x100k
+on:
+  push:
+    paths:
+      - 'negative_rr_strategy_sweep_2x100k_2012_2026.py'
+      - '.github/workflows/negative_rr_strategy_sweep_2x100k.yml'
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python negative_rr_strategy_sweep_2x100k_2012_2026.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase
+          git add negative_rr_strategy_sweep_2x100k_2012_2026.csv negative_rr_strategy_sweep_top25.csv
+          git commit -m 'Add negative RR strategy sweep results' || exit 0
+          git push
