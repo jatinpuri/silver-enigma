@@ -1,0 +1,26 @@
+name: Turbo 3x25k round robin 2.7pct
+on:
+  push:
+    paths:
+      - 'turbo_3x25k_roundrobin_27pct_2012_2026.py'
+      - '.github/workflows/turbo_3x25k_roundrobin_27pct.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_3x25k_roundrobin_27pct_2012_2026.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add turbo_3x25k_roundrobin_27pct_summary.csv turbo_3x25k_roundrobin_27pct_slots.csv turbo_3x25k_roundrobin_27pct_payouts.csv
+          git commit -m 'Add 3x25k round robin results' || exit 0
+          git pull --rebase origin master
+          git push
