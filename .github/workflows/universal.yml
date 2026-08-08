@@ -1,0 +1,30 @@
+name: Universal optimisation
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'universal_optimizer.py'
+      - '.github/workflows/universal.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  optimise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy pandas requests numba
+      - run: python universal_optimizer.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add universal_optimisation_top.csv universal_optimisation_best.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "Add universal optimisation results"
+            git push
+          fi
