@@ -1,0 +1,26 @@
+name: Turbo quick payout risk grid
+on:
+  push:
+    paths:
+      - 'turbo_quick_payout_risk_grid_2012_2026.py'
+      - '.github/workflows/turbo_quick_payout_risk_grid.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_quick_payout_risk_grid_2012_2026.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add turbo_quick_payout_risk_grid_2012_2026.csv
+          git diff --cached --quiet || git commit -m "Add quick payout risk grid results"
+          git push
