@@ -1,4 +1,4 @@
-import json, math
+import json
 import numpy as np
 import pandas as pd
 
@@ -28,6 +28,9 @@ def one(sym):
     df=pd.DataFrame(arr,columns=['timestamp','open','high','low','close'])
     df['dt']=pd.to_datetime(df.timestamp,unit='ms',utc=True)
     df=df.drop_duplicates('dt').sort_values('dt').reset_index(drop=True)
+    # dukascopy-node can pad closed-market hours with flat candles when volume is omitted.
+    # Remove these before ATR/ADX so weekends do not artificially suppress volatility.
+    df=df[(df['high']>df['low']) | (df['open']!=df['close'])].copy().reset_index(drop=True)
     lon=df['dt'].dt.tz_convert('Europe/London')
     df['lh']=lon.dt.hour
     df['wd']=lon.dt.weekday
@@ -45,6 +48,9 @@ def one(sym):
         if not (row['adx']>row['adx_prev'] and row['range']>row['atr']): continue
         j=i+1
         if j>=len(df): continue
+        # Next bar must actually be the 09:00-10:00 London bar; otherwise no valid 1h expiry window.
+        lon_j=df.loc[j,'dt'].tz_convert('Europe/London')
+        if lon_j.hour!=9 or lon_j.date()!=row['dt'].tz_convert('Europe/London').date(): continue
         d=int(row['dir']); entry=row['high'] if d>0 else row['low']
         if d>0 and df.loc[j,'high']<entry: continue
         if d<0 and df.loc[j,'low']>entry: continue
