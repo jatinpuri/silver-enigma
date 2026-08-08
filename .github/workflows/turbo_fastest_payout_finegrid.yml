@@ -1,0 +1,25 @@
+name: Turbo fastest payout finegrid
+on:
+  push:
+    paths:
+      - 'turbo_fastest_payout_finegrid_2012_2026.py'
+      - '.github/workflows/turbo_fastest_payout_finegrid.yml'
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_fastest_payout_finegrid_2012_2026.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add turbo_fastest_payout_finegrid_2012_2026.csv
+          git commit -m 'Add fastest payout finegrid results' || exit 0
+          git push
