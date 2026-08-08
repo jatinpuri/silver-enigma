@@ -1,0 +1,4 @@
+slot,trades,payouts,breaches,accounts_used,user_payout_usd,avg_first_payout_days_successful_accounts,median_first_payout_days_successful_accounts,avg_days_between_slot_payouts,median_days_between_slot_payouts
+1,1187,23,55,56,101362.00105599618,142.04761904761904,108.0,231.95454545454547,151.5
+2,1187,17,47,48,73078.75174679085,143.8125,123.5,297.1875,248.0
+3,1186,20,46,47,85885.04108185867,145.31578947368422,134.0,259.1578947368421,264.0
