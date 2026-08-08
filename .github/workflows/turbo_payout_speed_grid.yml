@@ -1,0 +1,26 @@
+name: Turbo payout speed grid
+on:
+  push:
+    paths:
+      - 'turbo_payout_speed_grid_2012_2026.py'
+      - '.github/workflows/turbo_payout_speed_grid.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_payout_speed_grid_2012_2026.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add turbo_payout_speed_grid_2012_2026.csv
+          git diff --cached --quiet || git commit -m 'Update payout speed grid results'
+          git push
