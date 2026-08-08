@@ -1,0 +1,26 @@
+name: Turbo 200k split compare 2.7pct 2026
+on:
+  push:
+    paths:
+      - '.github/workflows/turbo_200k_split_compare_27pct_2026.yml'
+      - 'turbo_200k_split_compare_27pct_2026.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_200k_split_compare_27pct_2026.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase
+          git add turbo_200k_split_compare_27pct_2026_summary.csv turbo_200k_split_compare_27pct_2026_slots.csv
+          git commit -m 'Add 2026 200k split comparison results' || exit 0
+          git push
