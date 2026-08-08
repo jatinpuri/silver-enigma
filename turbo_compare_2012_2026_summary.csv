@@ -1,0 +1,3 @@
+buffer,trades,payouts,breaches,accounts_used,gross_requested,user_paid,ending_balance,ending_floor,ending_cycle_base,ending_cycle_profit,ending_profitable_days,ending_best_day,ending_consistency
+0.0,2351,36,38,39,462286.5048173951,369829.2038539161,200000.0,200000.0,200000.0,0.0,0,0.0,inf
+4000.0,2351,36,23,24,373501.3693533819,298801.09548270557,214364.24365436862,200000.0,204000.0,10364.24365436862,13,2400.0,0.2315653780474737
