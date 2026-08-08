@@ -1,0 +1,27 @@
+name: Turbo 200k 0.8pct one trade day buffer4k
+on:
+  push:
+    paths:
+      - 'turbo_200k_08pct_1trade_day_buffer4k.py'
+      - '.github/workflows/turbo_200k_08pct_1trade_day_buffer4k.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_200k_08pct_1trade_day_buffer4k.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add turbo_200k_08pct_1trade_day_buffer4k_*.csv
+          git commit -m "Update 4k buffer Turbo results" || exit 0
+          git pull --rebase origin master
+          git push
