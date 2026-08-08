@@ -1,0 +1,4 @@
+setup,total_nominal_capital,accounts_live,account_size,risk_pct,risk_usd_per_trade_per_account,source_trades_used,payouts,breaches,accounts_purchased_total,user_payout_usd,account_cost_usd,net_cash_usd,avg_user_payout_usd,avg_days_between_portfolio_payouts,median_days_between_portfolio_payouts,avg_first_payout_days_successful_accounts,median_first_payout_days_successful_accounts,first_portfolio_payout_date,first_portfolio_payout_days_from_2026_start
+1x200k,200000.0,1,200000.0,0.027,5400.0,92,1,1,2,35048.859344184915,2196.0,32852.859344184915,35048.859344184915,,,152.0,152.0,2026-06-03,153
+2x100k,200000.0,2,100000.0,0.027,2700.0,126,2,5,7,33410.766563674915,3843.0,29567.766563674915,16705.383281837458,101.0,101.0,50.0,50.0,2026-02-23,53
+4x50k,200000.0,4,50000.0,0.027,1350.0,135,2,4,8,16847.651433029772,2792.0,14055.651433029772,8423.825716514886,91.0,91.0,128.0,128.0,2026-05-06,125

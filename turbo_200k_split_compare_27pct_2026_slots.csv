@@ -1,0 +1,8 @@
+setup,slot,trades,payouts,breaches,accounts_used,user_paid_usd,avg_first_payout_days_successful_accounts,median_first_payout_days_successful_accounts
+1x200k,1,92,1,1,2,35048.859344184915,152.0,152.0
+2x100k,1,63,1,2,3,16412.71686141392,52.0,52.0
+2x100k,2,63,1,3,4,16998.049702260992,48.0,48.0
+4x50k,1,34,1,2,3,8747.642579703068,124.0,124.0
+4x50k,2,34,0,0,1,0.0,,
+4x50k,3,34,0,1,2,0.0,,
+4x50k,4,33,1,1,2,8100.0088533267035,132.0,132.0
