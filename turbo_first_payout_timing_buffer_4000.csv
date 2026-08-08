@@ -1,0 +1,2 @@
+buffer,accounts_observed,accounts_with_first_payout,payout_before_breach_rate,avg_days_to_first_payout_successful,median_days_to_first_payout_successful,min_days_to_first_payout_successful,max_days_to_first_payout_successful,avg_weeks_to_first_payout_successful,median_weeks_to_first_payout_successful
+4000.0,24,21,0.875,142.61904761904762,130.0,26.0,414.0,20.374149659863946,18.571428571428573
