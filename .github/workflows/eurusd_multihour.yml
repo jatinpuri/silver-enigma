@@ -1,0 +1,32 @@
+name: EURUSD multi-hour backtest
+on:
+  push:
+    paths:
+      - 'eurusd_multihour_download.js'
+      - 'eurusd_multihour_backtest.py'
+      - '.github/workflows/eurusd_multihour.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm install dukascopy-node
+      - run: pip install numpy pandas
+      - run: node eurusd_multihour_download.js
+      - run: python eurusd_multihour_backtest.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add eurusd_multihour_windows.csv eurusd_multihour_combos.csv eurusd_multihour_best_near260.csv eurusd_multihour_yearly_top10.csv eurusd_multihour_trades.csv
+          git diff --cached --quiet || git commit -m "Add EURUSD multi-hour backtest results"
+          git push
