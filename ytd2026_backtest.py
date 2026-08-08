@@ -25,11 +25,10 @@ def pf(rs):
 
 def one(sym):
     arr=json.load(open(f'ytd_{sym}_h1.json'))
-    # [timestamp,open,high,low,close] when volumes=false
     df=pd.DataFrame(arr,columns=['timestamp','open','high','low','close'])
     df['dt']=pd.to_datetime(df.timestamp,unit='ms',utc=True)
     df=df.drop_duplicates('dt').sort_values('dt').reset_index(drop=True)
-    lon=df.dt.dt.tz_convert('Europe/London')
+    lon=df['dt'].dt.tz_convert('Europe/London')
     df['lh']=lon.dt.hour
     df['wd']=lon.dt.weekday
     df['year']=lon.dt.year
@@ -41,28 +40,25 @@ def one(sym):
     df['adx_prev']=adx.shift(1)
     trades=[]
     for i,row in df.iterrows():
-        # 08:00-09:00 London candle, then decision at 09:00.
-        if row.year!=2026 or row.lh!=8 or row.wd>4 or row['dir']==0: continue
-        if not (np.isfinite(row.atr) and np.isfinite(row.adx) and np.isfinite(row.adx_prev)): continue
-        if not (row.adx>row.adx_prev and row['range']>row.atr): continue
+        if row['year']!=2026 or row['lh']!=8 or row['wd']>4 or row['dir']==0: continue
+        if not (np.isfinite(row['atr']) and np.isfinite(row['adx']) and np.isfinite(row['adx_prev'])): continue
+        if not (row['adx']>row['adx_prev'] and row['range']>row['atr']): continue
         j=i+1
         if j>=len(df): continue
-        d=int(row['dir']); entry=row.high if d>0 else row.low
-        # pending valid only during next H1 candle
+        d=int(row['dir']); entry=row['high'] if d>0 else row['low']
         if d>0 and df.loc[j,'high']<entry: continue
         if d<0 and df.loc[j,'low']>entry: continue
-        risk=SL*row.atr; target=entry+d*TP*row.atr; stop=entry-d*risk
+        risk=SL*row['atr']; target=entry+d*TP*row['atr']; stop=entry-d*risk
         end=min(j+HOLD-1,len(df)-1); rv=None; reason='time'
         for k in range(j,end+1):
             hi,lo=df.loc[k,'high'],df.loc[k,'low']
             hs=(lo<=stop) if d>0 else (hi>=stop)
             ht=(hi>=target) if d>0 else (lo<=target)
-            # same conservative H1 convention as optimisation
             if hs: rv=-1.0; reason='SL'; break
             if ht: rv=TP/SL; reason='TP'; break
         if rv is None:
             rv=((df.loc[end,'close']-entry)*d)/risk
-        trades.append({'symbol':sym,'signal':str(row.dt),'R':rv,'reason':reason})
+        trades.append({'symbol':sym,'signal':str(row['dt']),'R':rv,'reason':reason})
     return trades
 
 alltr=[]
