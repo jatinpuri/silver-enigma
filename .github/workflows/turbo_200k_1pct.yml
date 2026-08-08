@@ -1,0 +1,27 @@
+name: Turbo 200k 1pct simulation
+on:
+  push:
+    paths:
+      - 'turbo_200k_1pct.py'
+      - '.github/workflows/turbo_200k_1pct.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy
+      - run: python turbo_200k_1pct.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add turbo_200k_1pct_summary.csv turbo_200k_1pct_payouts.csv turbo_200k_1pct_breaches.csv
+          git diff --cached --quiet || git commit -m "Add 200k 1pct Turbo results"
+          git pull --rebase
+          git push
