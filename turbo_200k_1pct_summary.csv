@@ -1,0 +1,3 @@
+mode,trades,payouts,breaches,accounts_used,gross_paid,user_paid,ending_balance,ending_floor,ending_cycle_profit,ending_profitable_days,ending_best_day,ending_consistency
+custom,135,0,0,1,0,0,222871.90128554808,188000.0,22871.901285548083,36,7217.933424238174,0.3155808226926426
+official,135,0,0,1,0,0,222871.90128554808,200000.0,22871.901285548083,36,7217.933424238174,0.3155808226926426
