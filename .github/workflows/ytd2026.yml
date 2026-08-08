@@ -1,0 +1,32 @@
+name: YTD 2026 universal backtest
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm install dukascopy-node
+      - run: pip install numpy pandas
+      - run: node ytd2026.js
+      - run: python ytd2026_backtest.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add ytd2026_summary.csv ytd2026_trades.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "Add 2026 YTD universal results"
+            git push
+          fi
