@@ -1,0 +1,26 @@
+name: Turbo first payout timing
+on:
+  push:
+    paths:
+      - 'turbo_first_payout_timing_2012_2026.py'
+      - '.github/workflows/turbo_first_payout_timing.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas
+      - run: python turbo_first_payout_timing_2012_2026.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add turbo_first_payout_timing_buffer_0.csv turbo_first_payout_timing_buffer_4000.csv turbo_first_payout_accounts_buffer_0.csv turbo_first_payout_accounts_buffer_4000.csv
+          git commit -m 'Add first payout timing results' || exit 0
+          git push
