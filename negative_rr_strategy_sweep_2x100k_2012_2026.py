@@ -62,8 +62,8 @@ def direction_and_ok(row,strat):
         return (1 if row['pdi']>row['mdi'] else -1),True
     return 0,False
 
-def build_trades(strat,rr):
-    tp_atr=SL_ATR*rr; out=[]
+def build_all_rr_trades(strat):
+    byrr={rr:[] for rr in RRS}
     for w,(tz,sig_hour) in WINDOWS.items():
         lh,wd,yr=locals_cache[w]
         idxs=np.where((lh==sig_hour)&(wd<=4)&(yr>=2012)&(yr<=2026))[0]
@@ -79,20 +79,30 @@ def build_trades(strat,rr):
             if d<0 and float(df.loc[j,'low'])>entry: continue
             risk=SL_ATR*float(row['atr'])
             if risk<=0: continue
-            stop=entry-d*risk; target=entry+d*tp_atr*float(row['atr'])
-            end=min(j+HOLD-1,len(df)-1); rv=None; exit_idx=end; reason='TIME'
+            stop=entry-d*risk; end=min(j+HOLD-1,len(df)-1)
+            outcomes={}; unresolved=set(RRS)
+            stop_idx=None
             for k in range(j,end+1):
                 hi=float(df.loc[k,'high']); lo=float(df.loc[k,'low'])
                 hit_sl=(lo<=stop) if d>0 else (hi>=stop)
-                hit_tp=(hi>=target) if d>0 else (lo<=target)
-                if hit_sl: rv=-1.0; exit_idx=k; reason='SL'; break
-                if hit_tp: rv=rr; exit_idx=k; reason='TP'; break
-            if rv is None:
-                rv=((float(df.loc[end,'close'])-entry)*d)/risk
-            out.append(dict(strategy=strat,rr=rr,window=w,signal_dt=row['dt'],entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row['dt'].date(),year=int(yr[i]),R=float(rv),reason=reason))
-    if not out:
-        return pd.DataFrame(columns=['strategy','rr','window','signal_dt','entry_bar_dt','exit_dt','trade_day','year','R','reason'])
-    return pd.DataFrame(out).sort_values(['signal_dt','entry_bar_dt','window']).reset_index(drop=True)
+                # SL-first same-bar rule: unresolved targets lose if SL is touched on this bar.
+                if hit_sl:
+                    stop_idx=k
+                    for rr in list(unresolved): outcomes[rr]=(-1.0,k,'SL')
+                    unresolved.clear(); break
+                fav=((hi-entry)/risk) if d>0 else ((entry-lo)/risk)
+                for rr in sorted(list(unresolved)):
+                    if fav>=rr-1e-12:
+                        outcomes[rr]=(float(rr),k,'TP'); unresolved.remove(rr)
+            if unresolved:
+                time_r=((float(df.loc[end,'close'])-entry)*d)/risk
+                for rr in unresolved: outcomes[rr]=(float(time_r),end,'TIME')
+            for rr,(rv,exit_idx,reason) in outcomes.items():
+                byrr[rr].append(dict(strategy=strat,rr=rr,window=w,signal_dt=row['dt'],entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row['dt'].date(),year=int(yr[i]),R=float(rv),reason=reason))
+    out={}
+    for rr,rows in byrr.items():
+        out[rr]=pd.DataFrame(rows).sort_values(['signal_dt','entry_bar_dt','window']).reset_index(drop=True) if rows else pd.DataFrame(columns=['strategy','rr','window','signal_dt','entry_bar_dt','exit_dt','trade_day','year','R','reason'])
+    return out
 
 def metrics(t):
     if len(t)==0: return dict(n=0,wr=np.nan,ev=np.nan,pf=np.nan,totalR=0)
@@ -145,8 +155,9 @@ def simulate(t,start):
 
 rows=[]
 for strat in STRATS:
+    allrr=build_all_rr_trades(strat)
     for rr in RRS:
-        t=build_trades(strat,rr)
+        t=allrr[rr]
         fullm=metrics(t[(t.signal_dt>=FULL_START)&(t.signal_dt<END)])
         y26m=metrics(t[(t.signal_dt>=Y26_START)&(t.signal_dt<END)])
         sf=simulate(t,FULL_START); sy=simulate(t,Y26_START)
@@ -154,7 +165,7 @@ for strat in STRATS:
         row.update({f'full_{k}':v for k,v in fullm.items()}); row.update({f'y26_{k}':v for k,v in y26m.items()})
         row.update({f'fullsim_{k}':v for k,v in sf.items()}); row.update({f'y26sim_{k}':v for k,v in sy.items()})
         rows.append(row)
-        print(strat,rr,'PF',fullm['pf'],'EV',fullm['ev'],'success',sf['payout_before_breach_rate'],'med',sf['median_first_payout_days'],'2026 pays',sy['payouts'])
+        print(strat,rr,'PF',round(fullm['pf'],3),'EV',round(fullm['ev'],4),'success',round(sf['payout_before_breach_rate'],3) if np.isfinite(sf['payout_before_breach_rate']) else sf['payout_before_breach_rate'],'med',sf['median_first_payout_days'],'2026 pays',sy['payouts'])
 
 out=pd.DataFrame(rows)
 out.to_csv('negative_rr_strategy_sweep_2x100k_2012_2026.csv',index=False)
