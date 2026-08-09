@@ -1,0 +1,29 @@
+name: Real life EV negative RR
+on:
+  push:
+    paths:
+      - 'real_life_ev_negative_rr.py'
+      - '.github/workflows/real_life_ev_negative_rr.yml'
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install dukascopy-node
+      - run: node eurusd_multihour_download.js
+      - run: pip install pandas numpy
+      - run: python real_life_ev_negative_rr.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add real_life_ev_negative_rr_results.csv
+          git commit -m 'Add real-life negative RR EV results' || exit 0
+          git push
