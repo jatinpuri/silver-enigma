@@ -1,0 +1,32 @@
+name: Setup B reversal optimizer fast
+on:
+  push:
+    paths:
+      - 'setup_b_reversal_optimizer_fast.py'
+      - '.github/workflows/setup_b_reversal_optimizer_fast.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install dukascopy-node
+      - run: node eurusd_multihour_download.js
+      - run: pip install pandas numpy
+      - run: python setup_b_reversal_optimizer_fast.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase
+          git add setup_b_reversal_optimizer_fast_all.csv setup_b_reversal_optimizer_fast_robust.csv
+          git commit -m 'Add fast reversal optimizer results' || exit 0
+          git push
