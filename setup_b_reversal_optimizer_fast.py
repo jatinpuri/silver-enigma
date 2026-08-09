@@ -57,7 +57,8 @@ for f in FILTERS:
    for pl,a,b in [('TRAIN',START,TRAIN_END),('OOS',TRAIN_END,END),('YTD2026',pd.Timestamp('2026-01-01',tz='UTC'),END),('FULL',START,END)]:
     q=m&(dts>=a)&(dts<b); x=R[q]
     if len(x)==0: continue
-    yrs=pd.DataFrame({'dt':dts[q],'R':x}).groupby(dts[q].year).R.sum()
+    qdt=dts[q]
+    yrs=pd.DataFrame({'year':qdt.dt.year.to_numpy(),'R':x}).groupby('year').R.sum()
     rows.append([f,sl,rr,pl,len(x),(x>0).mean(),pf(x),x.mean(),Rc[q].mean(),Rs[q].mean(),x.sum(),maxdd(x),int((yrs>0).sum()),len(yrs)])
 out=pd.DataFrame(rows,columns=['filter','sl_atr','rr','period','trades','wr','pf','ev','ev_comm','ev_stress','total','maxdd','positive_years','years']); out.to_csv('setup_b_reversal_optimizer_fast_all.csv',index=False)
 w=out.pivot_table(index=['filter','sl_atr','rr'],columns='period',values=['trades','wr','pf','ev','ev_comm','ev_stress','total'],aggfunc='first'); w.columns=['__'.join(c) for c in w.columns]; w=w.reset_index()
