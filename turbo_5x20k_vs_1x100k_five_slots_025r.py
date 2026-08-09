@@ -37,7 +37,7 @@ for slot,(tz,sig_hour) in SLOTS.items():
         row=df.iloc[i]; d=int(row.cdir)
         if d==0 or not np.isfinite(row.atr): continue
         j=i+1
-        if j>=len(df) or (df.loc[j,'dt']-row.dt)>pd.Timedelta(hours=1,minutes=1): continue
+        if j>=len(df) or (df.loc[j,'dt']-row['dt'])>pd.Timedelta(hours=1,minutes=1): continue
         entry=float(row.high if d>0 else row.low)
         if d>0 and float(df.loc[j,'high'])<entry: continue
         if d<0 and float(df.loc[j,'low'])>entry: continue
@@ -52,7 +52,7 @@ for slot,(tz,sig_hour) in SLOTS.items():
             if hit_sl: rv=-1.0; exit_idx=k; break
             if hit_tp: rv=RR; exit_idx=k; break
         if rv is None: rv=((float(df.loc[end,'close'])-entry)*d)/stop_dist
-        trades.append(dict(slot=slot,signal_dt=row.dt,entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row.dt.date(),raw_R=float(rv),stop_pips=stop_dist/0.0001))
+        trades.append(dict(slot=slot,signal_dt=row['dt'],entry_bar_dt=df.loc[j,'dt'],exit_dt=df.loc[exit_idx,'dt'],trade_day=row['dt'].date(),raw_R=float(rv),stop_pips=stop_dist/0.0001))
 tr=pd.DataFrame(trades).sort_values(['trade_day','entry_bar_dt','signal_dt','slot']).reset_index(drop=True)
 
 def pnl_after_cost(raw_R,stop_pips,size,stress=False):
@@ -153,11 +153,9 @@ for label,start in [('FULL_2012_2026',FULL_START),('YTD_2026',Y26_START)]:
         for method,fn in [('5x20k_5_FIXED_SLOTS',sim_5x20),('1x100k_EARLIEST_OF_5',sim_1x100_earliest),('1x100k_LON_H1_ONLY',sim_1x100_h1)]:
             sm=fn(start,stress); rows.append(dict(period=label,cost_model=costlabel,method=method,**sm))
 out=pd.DataFrame(rows)
-# Official current 100k successful activation = $549. 20k is not currently listed; leave its fee unknown.
 out['official_activation_cost_per_account']=np.where(out.method.str.startswith('1x100k'),549.0,np.nan)
 out['known_account_costs']=np.where(out.method.str.startswith('1x100k'),out.accounts_used*549.0,np.nan)
 out['known_net_cash']=np.where(out.method.str.startswith('1x100k'),out.user_paid-out.known_account_costs,np.nan)
-# Max hypothetical 20k activation fee per account such that 5x20k beats 1x100k earliest on net cash.
 for (period,cost_model),g in out.groupby(['period','cost_model']):
     base=g[g.method=='1x100k_EARLIEST_OF_5'].iloc[0]
     idx=out[(out.period==period)&(out.cost_model==cost_model)&(out.method=='5x20k_5_FIXED_SLOTS')].index[0]
