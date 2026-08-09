@@ -1,0 +1,32 @@
+name: Setup B Turbo 1x100k risk sweep
+on:
+  push:
+    paths:
+      - 'setup_b_turbo_1x100k_risk_sweep.py'
+      - '.github/workflows/setup_b_turbo_1x100k_risk_sweep.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install dukascopy-node
+      - run: node eurusd_multihour_download.js
+      - run: pip install pandas numpy
+      - run: python setup_b_turbo_1x100k_risk_sweep.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add setup_b_turbo_1x100k_risk_sweep_results.csv setup_b_turbo_1x100k_reconstruction_stats.csv
+          git commit -m 'Add Setup B Turbo one-account risk sweep results' || exit 0
+          git pull --rebase origin master
+          git push
