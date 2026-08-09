@@ -15,20 +15,19 @@ def ind(df):
  pdi=100*rma(pdm,14)/base; mdi=100*rma(mdm,14)/base; dx=100*(pdi-mdi).abs()/(pdi+mdi); adx=rma(dx,14); return atr,adx,pdi,mdi
 arr=json.load(open('eurusd_h1_2011_2026.json')); df=pd.DataFrame(arr,columns=['timestamp','open','high','low','close']); df['dt']=pd.to_datetime(df.timestamp,unit='ms',utc=True)
 df=df.drop_duplicates('dt').sort_values('dt').reset_index(drop=True); df=df[(df.high!=df.low)|(df.open!=df.close)].reset_index(drop=True); df['atr'],df['adx'],df['pdi'],df['mdi']=ind(df)
-df['cdir']=np.sign(df.close-df.open).astype(int); df['didir']=np.sign(df.pdi-df.mdi).astype(int); df['rng']=df.high-df.low; df['body']=(df.close-df.open).abs(); df['bodyfrac']=df.body/df.rng.replace(0,np.nan); df['range_ratio']=df.rng/df.rng.shift(); df['di_gap']=(df.pdi-df.mdi).abs(); df['adx_drop']=df.adx.shift()-df.adx
+df['cdir']=np.sign(df.close-df.open).fillna(0).astype(int); df['didir']=np.sign(df.pdi-df.mdi).fillna(0).astype(int); df['rng']=df.high-df.low; df['body']=(df.close-df.open).abs(); df['bodyfrac']=df.body/df.rng.replace(0,np.nan); df['range_ratio']=df.rng/df.rng.shift(); df['di_gap']=(df.pdi-df.mdi).abs(); df['adx_drop']=df.adx.shift()-df.adx
 local=df.dt.dt.tz_convert('Europe/London'); idxs=np.where((local.dt.hour.to_numpy()==7)&(local.dt.weekday.to_numpy()<=3)&(local.dt.year.to_numpy()>=2012)&(local.dt.year.to_numpy()<=2026))[0]
 base=[]
 for i in idxs:
  if i<1: continue
  r=df.iloc[i]; p=df.iloc[i-1]; c=int(r.cdir)
- if c==0 or not np.isfinite(r.atr) or not np.isfinite(r.adx) or not np.isfinite(p.adx) or not r.adx<p.adx: continue
+ if c==0 or int(r.didir)==0 or not np.isfinite(r.atr) or not np.isfinite(r.adx) or not np.isfinite(p.adx) or not r.adx<p.adx: continue
  d=-c; j=i+1
  if j>=len(df) or (df.loc[j,'dt']-r['dt'])>pd.Timedelta(hours=1,minutes=1): continue
  entry=float(r.high if d>0 else r.low)
  if (d>0 and float(df.loc[j,'high'])<entry) or (d<0 and float(df.loc[j,'low'])>entry): continue
  base.append(dict(i=i,j=j,d=d,dt=r['dt'],c=c,di=int(r.didir),adx=float(r.adx),drop=float(r.adx_drop),gap=float(r.di_gap),rratio=float(r.range_ratio),bodyfrac=float(r.bodyfrac),atr=float(r.atr),entry=entry))
 B=pd.DataFrame(base); n=len(B)
-# Precompute R for each sl/rr for every triggered falling-ADX reversal signal.
 outcomes={}
 high=df.high.to_numpy(float); low=df.low.to_numpy(float); close=df.close.to_numpy(float)
 for sl in SLS:
