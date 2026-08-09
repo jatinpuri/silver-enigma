@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'setup_b_extra_setups_optimizer.py'
+      - 'setup_b_extra_setups_optimizer_fixed.py'
       - '.github/workflows/setup_b_extra_setups_optimizer.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +22,7 @@ jobs:
       - run: npm install dukascopy-node
       - run: node eurusd_multihour_download.js
       - run: pip install pandas numpy
-      - run: python setup_b_extra_setups_optimizer.py
+      - run: python setup_b_extra_setups_optimizer_fixed.py
       - name: Commit results
         run: |
           git config user.name github-actions
