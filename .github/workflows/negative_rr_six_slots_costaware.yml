@@ -1,0 +1,34 @@
+name: Negative RR six-slot cost-aware analysis
+
+on:
+  push:
+    paths:
+      - 'negative_rr_six_slots_costaware.py'
+      - '.github/workflows/negative_rr_six_slots_costaware.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install dukascopy-node
+      - run: node eurusd_multihour_download.js
+      - run: pip install pandas numpy
+      - run: python negative_rr_six_slots_costaware.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add negative_rr_six_slots_edge_results.csv negative_rr_six_slots_2account_combo_results.csv
+          git commit -m 'Add six-slot cost-aware negative RR results' || exit 0
+          git push
