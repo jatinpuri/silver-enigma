@@ -1,0 +1,31 @@
+name: Turbo 5x20k vs 1x100k five-slot 0.25R
+on:
+  push:
+    paths:
+      - 'turbo_5x20k_vs_1x100k_five_slots_025r.py'
+      - '.github/workflows/turbo_5x20k_vs_1x100k_five_slots_025r.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install dukascopy-node
+      - run: node eurusd_multihour_download.js
+      - run: pip install pandas numpy
+      - run: python turbo_5x20k_vs_1x100k_five_slots_025r.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add turbo_5x20k_vs_1x100k_five_slots_025r_results.csv
+          git diff --cached --quiet || git commit -m "Add 5x20k vs 1x100k five-slot results"
+          git push
