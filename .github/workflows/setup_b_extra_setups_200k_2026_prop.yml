@@ -1,0 +1,27 @@
+name: Setup B extra setups 200k 2026 prop
+on:
+  push:
+    paths:
+      - 'setup_b_extra_setups_200k_2026_prop.py'
+      - '.github/workflows/setup_b_extra_setups_200k_2026_prop.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pandas numpy
+      - run: python setup_b_extra_setups_200k_2026_prop.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase
+          git add setup_b_extra_setups_200k_2026_prop_results.csv
+          git commit -m 'Add expanded Setup B 200k 2026 prop results' || exit 0
+          git push
