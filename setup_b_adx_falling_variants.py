@@ -102,7 +102,7 @@ for name in variants:
         # Extra 0.2 pip execution stress => another 0.2 / stop_pips R.
         comm_r=0.4/stop_pips
         stress_r=0.6/stop_pips
-        alltr.append(dict(variant=name,signal_dt=row.dt,exit_dt=df.loc[exit_idx,'dt'],R=float(rv),R_after_comm=float(rv-comm_r),R_after_comm_0p2=float(rv-stress_r),stop_pips=stop_pips,dir=d,cdir=int(row.cdir),didir=int(row.didir),adx=float(row.adx),adx_prev=float(df.iloc[i-1].adx)))
+        alltr.append(dict(variant=name,signal_dt=row['dt'],exit_dt=df.loc[exit_idx,'dt'],R=float(rv),R_after_comm=float(rv-comm_r),R_after_comm_0p2=float(rv-stress_r),stop_pips=stop_pips,dir=d,cdir=int(row.cdir),didir=int(row.didir),adx=float(row.adx),adx_prev=float(df.iloc[i-1].adx)))
 
 tr=pd.DataFrame(alltr)
 tr=tr[(tr.signal_dt>=START)&(tr.signal_dt<END)].copy()
