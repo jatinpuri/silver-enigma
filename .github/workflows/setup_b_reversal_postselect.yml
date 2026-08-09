@@ -1,0 +1,27 @@
+name: Setup B reversal strict postselect
+on:
+  push:
+    paths:
+      - 'setup_b_reversal_postselect.py'
+      - '.github/workflows/setup_b_reversal_postselect.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pandas numpy
+      - run: python setup_b_reversal_postselect.py
+      - name: Commit results
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase
+          git add setup_b_reversal_strict_candidates.csv
+          git commit -m 'Add strict reversal candidates' || exit 0
+          git push
