@@ -1,0 +1,170 @@
+name: Build XAUUSD M1 BidAsk Artifact
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-xauusd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout trigger repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install data packages
+        run: python -m pip install --disable-pip-version-check pandas pyarrow
+
+      - name: Fetch pinned XAUUSD M1 source
+        shell: bash
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/kevingtlin/Market-Data-Lab.git source
+          cd source
+          git sparse-checkout set xauusd/bid/m1 xauusd/ask/m1
+          git rev-parse HEAD > ../SOURCE_COMMIT.txt
+
+      - name: Build merged Bid Ask parquet
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          import pyarrow as pa
+          import pyarrow.parquet as pq
+          import csv
+
+          src = Path("source/xauusd")
+          out = Path("out")
+          out.mkdir(exist_ok=True)
+
+          bid_files = sorted((src / "bid" / "m1").glob("xauusd_bid_m1_20*.csv"))
+          ask_files = sorted((src / "ask" / "m1").glob("xauusd_ask_m1_20*.csv"))
+          asks = {p.name.replace("xauusd_ask_", ""): p for p in ask_files}
+
+          output = out / "XAUUSD_M1_BIDASK_2010_2026-08.parquet"
+          writer = None
+          manifest_rows = []
+          total_rows = 0
+          first_ts = None
+          last_ts = None
+
+          for bid_path in bid_files:
+              key = bid_path.name.replace("xauusd_bid_", "")
+              ask_path = asks.get(key)
+              if ask_path is None:
+                  continue
+
+              bid = pd.read_csv(
+                  bid_path,
+                  dtype={"timestamp":"int64","open":"float64","high":"float64","low":"float64","close":"float64"}
+              ).rename(columns={
+                  "open":"bid_open","high":"bid_high","low":"bid_low","close":"bid_close"
+              })
+              ask = pd.read_csv(
+                  ask_path,
+                  dtype={"timestamp":"int64","open":"float64","high":"float64","low":"float64","close":"float64"}
+              ).rename(columns={
+                  "open":"ask_open","high":"ask_high","low":"ask_low","close":"ask_close"
+              })
+
+              merged = bid.merge(ask, on="timestamp", how="inner", sort=True)
+              merged = merged[
+                  ["timestamp","bid_open","bid_high","bid_low","bid_close",
+                   "ask_open","ask_high","ask_low","ask_close"]
+              ]
+
+              if merged.empty:
+                  continue
+
+              table = pa.Table.from_pandas(merged, preserve_index=False)
+              if writer is None:
+                  writer = pq.ParquetWriter(
+                      output,
+                      table.schema,
+                      compression="zstd",
+                      compression_level=9,
+                      use_dictionary=False,
+                      write_statistics=True
+                  )
+              writer.write_table(table, row_group_size=250000)
+
+              n = len(merged)
+              total_rows += n
+              fts = int(merged["timestamp"].iloc[0])
+              lts = int(merged["timestamp"].iloc[-1])
+              first_ts = fts if first_ts is None else min(first_ts, fts)
+              last_ts = lts if last_ts is None else max(last_ts, lts)
+              manifest_rows.append([
+                  key, bid_path.name, ask_path.name, len(bid), len(ask), n, fts, lts
+              ])
+              print(key, n)
+
+          if writer is not None:
+              writer.close()
+
+          with (out / "manifest.csv").open("w", newline="") as f:
+              w = csv.writer(f)
+              w.writerow([
+                  "month_key","bid_file","ask_file","bid_rows","ask_rows",
+                  "merged_rows","first_timestamp_ms","last_timestamp_ms"
+              ])
+              w.writerows(manifest_rows)
+
+          source_commit = Path("SOURCE_COMMIT.txt").read_text().strip()
+          first_iso = pd.to_datetime(first_ts, unit="ms", utc=True).isoformat()
+          last_iso = pd.to_datetime(last_ts, unit="ms", utc=True).isoformat()
+          readme = f"""XAUUSD M1 BID/ASK DATASET
+
+Source: Dukascopy historical XAUUSD data as packaged by
+https://github.com/kevingtlin/Market-Data-Lab
+Source commit: {source_commit}
+
+Resolution: 1 minute
+Timezone: UTC
+Coverage: {first_iso} through {last_iso}
+Merged rows: {total_rows:,}
+Merge rule: inner join on timestamp.
+
+Parquet columns:
+timestamp      Unix epoch milliseconds UTC
+bid_open
+bid_high
+bid_low
+bid_close
+ask_open
+ask_high
+ask_low
+ask_close
+
+Execution guidance:
+- Long stop-entry activation should be checked against ASK.
+- Long stop/TP/exit should be checked against BID.
+- Short stop-entry activation should be checked against BID.
+- Short stop/TP/exit should be checked against ASK.
+- If both pending entry levels are reached in different M1 bars, the first one reached activates and the opposite order is cancelled.
+- If both entry levels are reached inside the same M1 bar, minute data cannot resolve ordering; use tick data or a conservative assumption.
+
+This file was built as a durable reusable research artifact so it can be
+re-uploaded to ChatGPT without depending on live GitHub access.
+"""
+          (out / "README.txt").write_text(readme)
+          PY
+
+      - name: Upload XAUUSD dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: XAUUSD_M1_BIDASK_2010_2026-08
+          path: |
+            out/XAUUSD_M1_BIDASK_2010_2026-08.parquet
+            out/manifest.csv
+            out/README.txt
+          compression-level: 0
+          retention-days: 7
